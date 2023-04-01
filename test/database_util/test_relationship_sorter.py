@@ -27,7 +27,7 @@ class TestTablePopulateOrder(unittest.TestCase):
             'sorting_collection_junction_table': ['sorting_collection', 'batch'],
         }
 
-        table_order = get_table_populate_order(self.table_relationships)
+        table_order = get_table_populate_order(table_relationships)
         expected_order = ['waste_group',
                           'brand_group',
                           'batch_type',

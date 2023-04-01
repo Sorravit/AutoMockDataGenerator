@@ -1,6 +1,6 @@
 # This is a sample Python script.
-from src import database_connector
-from src.database_util.relationship_sorter import get_table_populate_order
+from src.database_util.database_connector import DatabaseConnector
+from src.database_util.database_util import print_database_relations
 
 
 # Press ⌃R to execute it or replace it with your code.
@@ -15,4 +15,6 @@ def print_hi(name):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print_hi('PyCharm')
-    database_connector.main()
+    database_connector = DatabaseConnector(host="localhost", database="postgres", user="sorravit", password="sorravit")
+    table_relation = database_connector.get_table_relationships()
+    print_database_relations(table_relation)
