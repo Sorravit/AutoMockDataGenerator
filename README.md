@@ -1,0 +1,1 @@
+Automatically detect database schema and its dependency order then generate and insert data into the database by order
