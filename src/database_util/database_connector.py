@@ -47,7 +47,10 @@ class DatabaseConnector:
                 WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name='{table[0]}';
             """)
             relationships = cur.fetchall()
-            table_relationships[table[0]] = [relationship[2] for relationship in relationships]
+            table_relationships[table[0]] = {
+                'dependencies': [relationship[2] for relationship in relationships],
+                'dependency_columns': [relationship[1] for relationship in relationships]
+            }
         cur.close()
         self.conn.close()
         return table_relationships
@@ -70,17 +73,18 @@ class DatabaseConnector:
         self.connect_to_database()
         cur = self.conn.cursor()
 
-        cur.execute(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table_name}'")
+        cur.execute(
+            f"SELECT column_name, data_type, character_maximum_length FROM information_schema.columns WHERE table_name = '{table_name}'")
 
         columns = []
         for column in cur.fetchall():
-            columns.append({'name': column[0], 'type': column[1]})
+            columns.append({'name': column[0], 'type': column[1], 'max_length': column[2]})
 
         cur.close()
 
         return columns
 
-    def insert_mock_data(self, table_name, columns):
+    def insert_mock_data(self, table_name, columns, dependency=None):
         """
         Insert mock data into the specified table.
 
@@ -88,6 +92,10 @@ class DatabaseConnector:
             table_name (str): The name of the table to insert the data into.
             columns (list[dict]): A list of dictionaries representing the columns in the table, where each dictionary has
             keys 'name' and 'type'.
+            dependency (dict): A dictionary representing the dependency table and columns to select from. The dictionary
+            has keys 'dependencies' and 'dependency_columns', where 'dependencies' is a list of the names of the
+            dependency tables and 'dependency_columns' is a list of the names of the columns in the target table that
+            reference the dependency tables.
         """
         # Open a cursor to perform database operations
         self.connect_to_database()
@@ -108,12 +116,22 @@ class DatabaseConnector:
             for column in columns:
                 if column['name'] == 'id':
                     continue
+                elif column['name'] in dependency['dependency_columns']:
+                    dependency_table_name = dependency['dependencies'][
+                        dependency['dependency_columns'].index(column['name'])]
+                    cur.execute(f"SELECT id FROM {dependency_table_name}")
+                    dependency_rows = cur.fetchall()
+                    dependency_ids = [row[0] for row in dependency_rows]
+                    record.append(random.choice(dependency_ids))
                 elif column['type'] == 'text':
-                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))
+                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=5)))
                 elif column['type'] == 'character varying':
-                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))
+                    length = random.randint(1, column['max_length'])
+                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
                 elif column['type'] == 'integer':
                     record.append(random.randint(1, 100))
+                elif column['type'] == 'double precision':
+                    record.append(random.uniform(1, 100))
                 elif column['type'] == 'boolean':
                     record.append(random.choice([True, False]))
                 elif column['type'] == 'bytea':

@@ -1,6 +1,6 @@
 # This is a sample Python script.
 from src.database_util.database_connector import DatabaseConnector
-from src.database_util.database_util import print_database_relations
+from src.database_util.relationship_sorter import get_table_populate_order
 
 
 # Press ⌃R to execute it or replace it with your code.
@@ -17,4 +17,18 @@ if __name__ == '__main__':
     print_hi('PyCharm')
     database_connector = DatabaseConnector(host="localhost", database="postgres", user="sorravit", password="sorravit")
     table_relation = database_connector.get_table_relationships()
-    print_database_relations(table_relation)
+
+    # Preserve the legacy format
+    key_dependency_pairs = dict([(key, value['dependencies']) for key, value in table_relation.items()])
+    # print(table_relation)
+    # print_database_relations(key_dependency_pairs)
+    table_order_list = get_table_populate_order(key_dependency_pairs)
+
+    # print(table_order_list[7])
+    # print(table_relation[table_order_list[7]])
+    for table_name in table_order_list:
+        if table_name != 'flyway_schema_history':
+            print("Inserting data to :" + table_name)
+            columns = database_connector.get_table_columns(table_name)
+            print("columns " + str(columns))
+            database_connector.insert_mock_data(table_name, columns, table_relation[table_name])
