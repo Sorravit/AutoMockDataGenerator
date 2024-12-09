@@ -109,7 +109,7 @@ class MySqlConnector:
         insert_statement = f"INSERT INTO `{self.schema}`.`{table_name}` (`{'`,`'.join(column_names)}`) VALUES ({placeholders})"
 
         # Generate mock data
-        num_records = 1
+        num_records = 10000
         mock_data = []
         for i in range(num_records):
             record = []
@@ -131,13 +131,13 @@ class MySqlConnector:
                 elif column['type'] == 'text':
                     record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=5)))
                 elif column['type'] == 'character varying':
-                    length = random.randint(1, column['max_length'])
+                    length = random.randint(int(column['max_length'] / 2), column['max_length'])
                     record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
                 elif column['type'] == 'varchar':
-                    length = random.randint(1, column['max_length'])
+                    length = random.randint(int(column['max_length'] / 2), column['max_length'])
                     record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
                 elif column['type'] == 'char':
-                    length = random.randint(1, column['max_length'])
+                    length = random.randint(int(column['max_length'] / 2), column['max_length'])
                     record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
                 elif column['type'] == 'integer':
                     record.append(random.randint(1, 100))
