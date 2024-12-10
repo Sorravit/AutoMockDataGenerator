@@ -4,6 +4,8 @@ import random
 from datetime import datetime
 import mysql.connector
 
+from src.database_util.mock_data_util import random_decimal
+
 
 class MySqlConnector:
     def __init__(self, host: str, database: str, user: str, password: str, schema: str):
@@ -75,11 +77,11 @@ class MySqlConnector:
         cur = self.conn.cursor()
 
         cur.execute(
-            f"SELECT column_name, data_type, character_maximum_length FROM information_schema.columns WHERE table_name = '{table_name}'")
+            f"SELECT column_name, data_type, character_maximum_length,NUMERIC_PRECISION,NUMERIC_SCALE FROM information_schema.columns WHERE table_name = '{table_name}'")
 
         columns = []
         for column in cur.fetchall():
-            columns.append({'name': column[0], 'type': column[1], 'max_length': column[2]})
+            columns.append({'name': column[0], 'type': column[1], 'max_length': column[2], 'max_digit': column[3], 'max_decimal': column[4]})
 
         cur.close()
 
@@ -109,7 +111,7 @@ class MySqlConnector:
         insert_statement = f"INSERT INTO `{self.schema}`.`{table_name}` (`{'`,`'.join(column_names)}`) VALUES ({placeholders})"
 
         # Generate mock data
-        num_records = 10000
+        num_records = 100
         mock_data = []
         for i in range(num_records):
             record = []
@@ -142,7 +144,7 @@ class MySqlConnector:
                 elif column['type'] == 'integer':
                     record.append(random.randint(1, 100))
                 elif column['type'] == 'decimal':
-                    record.append(random.randint(1, 100))
+                    record.append(random_decimal(column['max_digit'], column['max_decimal']))
                 elif column['type'] == 'double precision':
                     record.append(random.uniform(1, 100))
                 elif column['type'] == 'boolean':
@@ -167,8 +169,8 @@ class MySqlConnector:
 
         # Insert the mock data
         print("insert_statement" + insert_statement)
-        print("mock data  " + str(len(mock_data[0])))
-        print(mock_data)
+        # print("mock data len  " + str(len(mock_data[0])))
+        # print(mock_data)
         cur.executemany(insert_statement, mock_data)
         conn.commit()
 

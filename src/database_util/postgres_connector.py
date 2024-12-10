@@ -5,7 +5,7 @@ from datetime import datetime
 import psycopg2
 
 
-class DatabaseConnector:
+class PostgresConnector:
     def __init__(self, host: str, database: str, user: str, password: str):
         self.conn = None
         self.host = host
