@@ -4,7 +4,7 @@ import random
 from datetime import datetime
 import mysql.connector
 
-from src.util.mock_data_util import random_decimal
+from src.util.mock_data_util import random_decimal, recommend_value_for_column
 
 
 class MySqlConnector:
@@ -87,13 +87,13 @@ class MySqlConnector:
 
         return columns
 
-    def insert_mock_data(self, table_name, columns, dependency=None):
+    def insert_mock_data(self, table_name, columns_property, dependency=None):
         """
         Insert mock data into the specified table.
 
         Args:
             table_name (str): The name of the table to insert the data into.
-            columns (list[dict]): A list of dictionaries representing the columns in the table, where each dictionary has
+            columns_property (list[dict]): A list of dictionaries representing the columns in the table, where each dictionary has
             keys 'name' and 'type'.
             dependency (dict): A dictionary representing the dependency table and columns to select from. The dictionary
             has keys 'dependencies' and 'dependency_columns', where 'dependencies' is a list of the names of the
@@ -106,7 +106,7 @@ class MySqlConnector:
         cur = self.conn.cursor()
 
         # Generate the insert statement
-        column_names = [column['name'] for column in columns if column['name'] != 'id']
+        column_names = [column['name'] for column in columns_property if column['name'] != 'id']
         placeholders = ','.join(['%s'] * len(column_names))
         insert_statement = f"INSERT INTO `{self.schema}`.`{table_name}` (`{'`,`'.join(column_names)}`) VALUES ({placeholders})"
 
@@ -115,60 +115,17 @@ class MySqlConnector:
         mock_data = []
         for i in range(num_records):
             record = []
-            # Need to refactor this
-            for column in columns:
-                if column['name'] == 'id':
-                    continue
-                elif column['name'] in dependency['dependency_columns']:
-                    dependency_table_name = dependency['dependencies'][dependency['dependency_columns'].index(column['name'])]
+            for column_property in columns_property:
+                if column_property['name'] in dependency['dependency_columns']:
+                    dependency_table_name = dependency['dependencies'][dependency['dependency_columns'].index(column_property['name'])]
                     primary_key_column_name = self.get_primary_key(dependency_table_name)
                     cur.execute(f"SELECT `{primary_key_column_name}` FROM `{dependency_table_name}`")
                     dependency_rows = cur.fetchall()
                     dependency_ids = [row[0] for row in dependency_rows]
-                    record.append(random.choice(dependency_ids))
-                elif column['type'] == 'json':
-                    json_object = {f'key{n}': f'value{n}' for n in range(random.randint(1, 10))}
-                    record.append(json.dumps(json_object))
-                elif column['type'] == 'text':
-                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=5)))
-                elif column['type'] == 'character varying':
-                    length = random.randint(int(column['max_length'] / 2), column['max_length'])
-                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
-                elif column['type'] == 'character':
-                    length = random.randint(int(column['max_length'] / 2), column['max_length'])
-                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
-                elif column['type'] == 'varchar':
-                    length = random.randint(int(column['max_length'] / 2), column['max_length'])
-                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
-                elif column['type'] == 'char':
-                    length = random.randint(int(column['max_length'] / 2), column['max_length'])
-                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
-                elif column['type'] == 'integer':
-                    record.append(random.randint(1, 100))
-                elif column['type'] == 'numeric':
-                    record.append(random.randint(1, 100))
-                elif column['type'] == 'decimal':
-                    record.append(random_decimal(column['max_digit'], column['max_decimal']))
-                elif column['type'] == 'double precision':
-                    record.append(random.uniform(1, 100))
-                elif column['type'] == 'boolean':
-                    record.append(random.choice([True, False]))
-                elif column['type'] == 'bytea':
-                    record.append(bytes([random.randint(0, 255) for _ in range(10)]))
-                elif column['type'] == 'timestamp without time zone':
-                    record.append(datetime.now())
-                elif column['type'] == 'int':
-                    record.append(random.randint(1, 100))
-                elif column['type'] == 'double':
-                    record.append(random.uniform(1, 100))
-                elif column['type'] == 'tinyint':
-                    record.append(random.choice([1, 0]))  # Booleans in MySQL are represented as tinyint
-                elif column['type'] == 'blob':
-                    record.append(bytes([random.randint(0, 255) for _ in range(10)]))
-                elif column['type'] == 'datetime':
-                    record.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                    return random.choice(dependency_ids)
                 else:
-                    print("Unsupported type " + column['type'])
+                    record.append(recommend_value_for_column(column_property))
+
             mock_data.append(record)
 
         # Insert the mock data
