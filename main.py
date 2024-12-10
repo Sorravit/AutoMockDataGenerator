@@ -1,8 +1,7 @@
 # This is a sample Python script.
-# from src.database_util.database_connector import DatabaseConnector
-from src.database_util.database_util import print_database_relations
 from src.database_util.mysql_connector import MySqlConnector
-from src.database_util.relationship_sorter import get_table_populate_order
+from src.database_util.postgres_connector import PostgresConnector
+from src.util.relationship_sorter import get_table_populate_order
 
 
 # Press ⌃R to execute it or replace it with your code.
@@ -17,10 +16,8 @@ def print_hi(name):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print_hi('PyCharm')
-    # database_connector = DatabaseConnector(host="localhost", database="etaxportal", user="root", password="sorravit")
-    database_connector = MySqlConnector(host="localhost", database="etaxportal", user="root", password="sorravit",
-                                        schema='etaxportal')
-    # database_connector = MySqlConnector(host="localhost", database="sorravit", user="root", password="sorravit",schema='sorravit')
+    database_connector = PostgresConnector(host="localhost", database="postgres", user="postgres", password="sorravit", schema='public')
+    # database_connector = MySqlConnector(host="localhost", database="etaxportal", user="root", password="sorravit",schema='etaxportal')
     table_relation = database_connector.get_table_relationships()
 
     # Preserve the legacy format
@@ -37,7 +34,7 @@ if __name__ == '__main__':
     for table_name in table_order_list:
         if table_name != 'flyway_schema_history':
             print("Inserting data to :" + table_name)
-            print("get_primary_key: " + database_connector.get_primary_key(table_name))
+            # print("get_primary_key: " + database_connector.get_primary_key(table_name))
             columns = database_connector.get_table_columns(table_name)
             print("columns " + str(columns))
             database_connector.insert_mock_data(table_name, columns, table_relation[table_name])

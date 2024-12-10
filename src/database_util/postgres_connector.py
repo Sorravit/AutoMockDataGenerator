@@ -1,3 +1,4 @@
+import json
 import string
 import random
 from datetime import datetime
@@ -6,12 +7,13 @@ import psycopg2
 
 
 class PostgresConnector:
-    def __init__(self, host: str, database: str, user: str, password: str):
+    def __init__(self, host: str, database: str, user: str, password: str, schema: str):
         self.conn = None
         self.host = host
         self.database = database
         self.user = user
         self.password = password
+        self.schema = schema
 
     def connect_to_database(self):
         self.conn = psycopg2.connect(
@@ -27,8 +29,8 @@ class PostgresConnector:
         cur.execute("""
             SELECT table_name
             FROM information_schema.tables
-            WHERE table_schema = 'public'
-        """)
+            WHERE table_schema = %s
+        """, (self.schema,))
         tables = cur.fetchall()
         table_relationships = {}
         for table in tables:
@@ -106,7 +108,8 @@ class PostgresConnector:
         column_names = [column['name'] for column in columns if column['name'] != 'id']
         placeholders = ','.join(['%s'] * len(column_names))
         sequence_name = f"{table_name}_seq"
-        insert_statement = f"INSERT INTO {table_name} (id,{','.join(column_names)}) VALUES (nextval('{sequence_name}'),{placeholders})"
+        insert_statement = f"INSERT INTO \"{self.schema}\".\"{table_name}\" ({','.join(column_names)}) VALUES ({placeholders})"
+        # insert_statement = f"INSERT INTO \"{table_name}\" (id,{','.join(column_names)}) VALUES (nextval('{sequence_name}'),{placeholders})"
 
         # Generate mock data
         num_records = 10
@@ -117,18 +120,27 @@ class PostgresConnector:
                 if column['name'] == 'id':
                     continue
                 elif column['name'] in dependency['dependency_columns']:
-                    dependency_table_name = dependency['dependencies'][
-                        dependency['dependency_columns'].index(column['name'])]
-                    cur.execute(f"SELECT id FROM {dependency_table_name}")
+                    dependency_table_name = dependency['dependencies'][dependency['dependency_columns'].index(column['name'])]
+                    primary_key_column_name = self.get_primary_key(dependency_table_name)
+                    # cur.execute(f"SELECT id FROM {dependency_table_name}")
+                    cur.execute(f"SELECT {primary_key_column_name} FROM \"{dependency_table_name}\" ")
                     dependency_rows = cur.fetchall()
                     dependency_ids = [row[0] for row in dependency_rows]
                     record.append(random.choice(dependency_ids))
+                elif column['type'] == 'json':
+                    json_object = {f'key{n}': f'value{n}' for n in range(random.randint(1, 10))}
+                    record.append(json.dumps(json_object))
                 elif column['type'] == 'text':
                     record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=5)))
                 elif column['type'] == 'character varying':
                     length = random.randint(1, column['max_length'])
                     record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
+                elif column['type'] == 'character':
+                    length = random.randint(int(column['max_length'] / 2), column['max_length'])
+                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
                 elif column['type'] == 'integer':
+                    record.append(random.randint(1, 100))
+                elif column['type'] == 'numeric':
                     record.append(random.randint(1, 100))
                 elif column['type'] == 'double precision':
                     record.append(random.uniform(1, 100))
@@ -138,6 +150,8 @@ class PostgresConnector:
                     record.append(bytes([random.randint(0, 255) for _ in range(10)]))
                 elif column['type'] == 'timestamp without time zone':
                     record.append(datetime.now())
+                else:
+                    print("Unsupported type " + column['type'])
             mock_data.append(record)
 
         # Insert the mock data
@@ -147,3 +161,26 @@ class PostgresConnector:
         conn.commit()
 
         cur.close()
+
+    def get_primary_key(self, table_name):
+        self.connect_to_database()
+        conn = self.conn
+        cur = self.conn.cursor()
+
+        # Execute the query to get the primary key of the table
+        cur.execute("""
+            SELECT a.attname
+            FROM   pg_index i
+            JOIN   pg_attribute a ON a.attrelid = i.indrelid
+                                AND a.attnum = ANY(i.indkey)
+            WHERE  i.indrelid = '"{}"'::regclass
+            AND    i.indisprimary;
+        """.format(table_name))
+
+        result = cur.fetchone()
+        conn.close()
+
+        if result:
+            return result[0]
+        else:
+            return None

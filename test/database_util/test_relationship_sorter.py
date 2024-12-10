@@ -1,6 +1,6 @@
 import unittest
 
-from src.database_util.relationship_sorter import get_table_populate_order
+from src.util.relationship_sorter import get_table_populate_order
 
 
 class TestTablePopulateOrder(unittest.TestCase):

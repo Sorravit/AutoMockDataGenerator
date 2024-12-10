@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from io import StringIO
 
-from src.database_util.database_util import print_database_relations
+from src.util.database_util import print_database_relations
 
 
 class TestDatabaseUtil(unittest.TestCase):

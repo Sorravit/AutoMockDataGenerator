@@ -4,7 +4,7 @@ import random
 from datetime import datetime
 import mysql.connector
 
-from src.database_util.mock_data_util import random_decimal
+from src.util.mock_data_util import random_decimal
 
 
 class MySqlConnector:
@@ -111,7 +111,7 @@ class MySqlConnector:
         insert_statement = f"INSERT INTO `{self.schema}`.`{table_name}` (`{'`,`'.join(column_names)}`) VALUES ({placeholders})"
 
         # Generate mock data
-        num_records = 100
+        num_records = 10
         mock_data = []
         for i in range(num_records):
             record = []
@@ -120,8 +120,7 @@ class MySqlConnector:
                 if column['name'] == 'id':
                     continue
                 elif column['name'] in dependency['dependency_columns']:
-                    dependency_table_name = dependency['dependencies'][
-                        dependency['dependency_columns'].index(column['name'])]
+                    dependency_table_name = dependency['dependencies'][dependency['dependency_columns'].index(column['name'])]
                     primary_key_column_name = self.get_primary_key(dependency_table_name)
                     cur.execute(f"SELECT `{primary_key_column_name}` FROM `{dependency_table_name}`")
                     dependency_rows = cur.fetchall()
@@ -135,6 +134,9 @@ class MySqlConnector:
                 elif column['type'] == 'character varying':
                     length = random.randint(int(column['max_length'] / 2), column['max_length'])
                     record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
+                elif column['type'] == 'character':
+                    length = random.randint(int(column['max_length'] / 2), column['max_length'])
+                    record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
                 elif column['type'] == 'varchar':
                     length = random.randint(int(column['max_length'] / 2), column['max_length'])
                     record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
@@ -142,6 +144,8 @@ class MySqlConnector:
                     length = random.randint(int(column['max_length'] / 2), column['max_length'])
                     record.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=length)))
                 elif column['type'] == 'integer':
+                    record.append(random.randint(1, 100))
+                elif column['type'] == 'numeric':
                     record.append(random.randint(1, 100))
                 elif column['type'] == 'decimal':
                     record.append(random_decimal(column['max_digit'], column['max_decimal']))
