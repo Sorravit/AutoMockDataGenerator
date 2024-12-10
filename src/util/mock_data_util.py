@@ -19,7 +19,7 @@ def random_decimal(max_digits=4, max_decimals=2):
     return random_decimal_value
 
 
-def recommend_value_for_column(column_property):
+def recommend_value_for_column(column_property, mock_date=datetime.now()):
     if column_property['type'] == 'json':
         json_object = {f'key{n}': f'value{n}' for n in range(random.randint(1, 10))}
         return json.dumps(json_object)
@@ -50,7 +50,7 @@ def recommend_value_for_column(column_property):
     elif column_property['type'] == 'bytea':
         return bytes([random.randint(0, 255) for _ in range(10)])
     elif column_property['type'] == 'timestamp without time zone':
-        return datetime.now()
+        return mock_date
     elif column_property['type'] == 'int':
         return random.randint(1, 100)
     elif column_property['type'] == 'double':
@@ -60,7 +60,7 @@ def recommend_value_for_column(column_property):
     elif column_property['type'] == 'blob':
         return bytes([random.randint(0, 255) for _ in range(10)])
     elif column_property['type'] == 'datetime':
-        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        return mock_date.strftime('%Y-%m-%d %H:%M:%S')
     else:
         print("Unsupported type " + column_property['type'])
 

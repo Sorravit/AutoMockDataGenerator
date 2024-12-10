@@ -1,7 +1,7 @@
 import json
 import string
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 import mysql.connector
 
 from src.util.mock_data_util import random_decimal, recommend_value_for_column
@@ -113,6 +113,11 @@ class MySqlConnector:
         # Generate mock data
         num_records = 10
         mock_data = []
+
+        # Mock date (will be useful latter)
+        now = datetime.now()
+        future_date = now + timedelta(days=4)
+
         for i in range(num_records):
             record = []
             for column_property in columns_property:
@@ -124,7 +129,7 @@ class MySqlConnector:
                     dependency_ids = [row[0] for row in dependency_rows]
                     return random.choice(dependency_ids)
                 else:
-                    record.append(recommend_value_for_column(column_property))
+                    record.append(recommend_value_for_column(column_property,future_date))
 
             mock_data.append(record)
 

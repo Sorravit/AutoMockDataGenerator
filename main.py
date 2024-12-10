@@ -16,8 +16,8 @@ def print_hi(name):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print_hi('PyCharm')
-    database_connector = PostgresConnector(host="localhost", database="postgres", user="postgres", password="sorravit", schema='public')
-    # database_connector = MySqlConnector(host="localhost", database="etaxportal", user="root", password="sorravit",schema='etaxportal')
+    # database_connector = PostgresConnector(host="localhost", database="postgres", user="postgres", password="sorravit", schema='public')
+    database_connector = MySqlConnector(host="localhost", database="etaxportal", user="root", password="sorravit",schema='etaxportal')
     table_relation = database_connector.get_table_relationships()
 
     # Preserve the legacy format

@@ -34,6 +34,7 @@ class PostgresConnector:
             WHERE table_schema = %s
         """, (self.schema,))
         tables = cur.fetchall()
+
         table_relationships = {}
         for table in tables:
             cur.execute(f"""
@@ -125,6 +126,7 @@ class PostgresConnector:
                 elif column_property['name'] in dependency['dependency_columns']:
                     dependency_table_name = dependency['dependencies'][dependency['dependency_columns'].index(column_property['name'])]
                     primary_key_column_name = self.get_primary_key(dependency_table_name)
+                    # It's a bit different from mysql in the charactor escape part
                     cur.execute(f"SELECT {primary_key_column_name} FROM \"{dependency_table_name}\" ")
                     dependency_rows = cur.fetchall()
                     dependency_ids = [row[0] for row in dependency_rows]
